@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#09090f">
+  <title>Return Detector | Test</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at top, #241044 0%, transparent 55%),
+        #09090f;
+      color: #f5f3ff;
+      font-family: Arial, sans-serif;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: 70px auto;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 7px 12px;
+      border: 1px solid #7041a8;
+      border-radius: 20px;
+      color: #d8b4fe;
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: clamp(30px, 7vw, 46px);
+      margin-bottom: 15px;
+      line-height: 1.15;
+    }
+
+    h1 span {
+      color: #c084fc;
+    }
+
+    .description {
+      color: #a1a1aa;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid #30243f;
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-weight: bold;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #4ade80;
+    }
+
+    #statusText {
+      color: #4ade80;
+    }
+
+    .info {
+      color: #a1a1aa;
+      font-size: 14px;
+      line-height: 1.8;
+      overflow-wrap: anywhere;
+    }
+
+    .timer {
+      font-size: 32px;
+      font-weight: bold;
+      color: #d8b4fe;
+      margin: 10px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 15px;
+      background: #9333ea;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(.98);
+    }
+
+    button.secondary {
+      background: #27212f;
+      border: 1px solid #514064;
+    }
+
+    #log {
+      margin-top: 14px;
+      color: #a1a1aa;
+      font-size: 13px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    /* Popup thông báo */
+    #toast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+      transform: translate(-50%, -25px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 15px 20px;
+      border-radius: 16px;
+      border: 1px solid #a855f7;
+      background: rgba(20, 14, 32, .94);
+      color: white;
+      box-shadow: 0 10px 40px #0008, 0 0 20px #9333ea22;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 99999;
+      transition: opacity .3s, transform .3s;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    footer {
+      color: #71717a;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="toast" role="status" aria-live="polite">
+    👋 Chào mừng bạn quay trở lại!
+  </div>
+
+  <main class="container">
+    <div class="badge">JAVASCRIPT · VISIBILITY API</div>
+
+    <h1>Return <span>Detector</span></h1>
+
+    <p class="description">
+      Demo phát hiện khi bạn chuyển sang ứng dụng khác,
+      đổi tab trình duyệt hoặc quay lại website.
+    </p>
+
+    <section class="panel">
+      <div class="status">
+        <span class="dot" id="dot"></span>
+        <span id="statusText">Đang hoạt động</span>
+      </div>
+
+      <div class="info">Trạng thái trang hiện tại</div>
+      <div class="timer" id="pageState">VISIBLE</div>
+      <div class="info" id="detail">
+        Hãy thử chuyển sang ứng dụng khác rồi quay lại.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="info">Thời gian vắng mặt gần nhất</div>
+      <div class="timer" id="awayTime">0 giây</div>
+      <div class="info">
+        Thông báo xuất hiện khi bạn quay lại sau ít nhất 3 giây.
+      </div>
+
+      <button id="testBtn">🧪 Test thông báo ngay</button>
+      <button class="secondary" id="resetBtn">Xóa nhật ký</button>
+    </section>
+
+    <section class="panel">
+      <strong>📋 Nhật ký hoạt động</strong>
+      <div id="log">Đang khởi tạo...</div>
+    </section>
+
+    <footer>
+      Return Detector Demo · HTML + CSS + JavaScript
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const MIN_AWAY_TIME = 3000;
+      const TOAST_DURATION = 3000;
+
+      const $ = id => document.getElementById(id);
+
+      let hiddenAt = null;
+      let lastAway = 0;
+      let toastTimer = null;
+      let logEntries = [];
+
+      function log(message) {
+        const time = new Date().toLocaleTimeString("vi-VN");
+
+        logEntries.unshift(`[${time}] ${message}`);
+        logEntries = logEntries.slice(0, 12);
+
+        $("log").textContent = logEntries.join("\n");
+      }
+
+      function showToast(message) {
+        const toast = $("toast");
+
+        toast.textContent = message;
+        toast.classList.add("show");
+
+        clearTimeout(toastTimer);
+
+        toastTimer = setTimeout(() => {
+          toast.classList.remove("show");
+        }, TOAST_DURATION);
+      }
+
+      function updateVisibleStatus() {
+        const visible = document.visibilityState === "visible";
+
+        $("pageState").textContent = visible
+          ? "VISIBLE"
+          : "HIDDEN";
+
+        $("statusText").textContent = visible
+          ? "Đang hoạt động"
+          : "Đang ở nền";
+
+        $("dot").style.background = visible
+          ? "#4ade80"
+          : "#fbbf24";
+
+        $("dot").style.boxShadow = visible
+          ? "0 0 12px #4ade80"
+          : "0 0 12px #fbbf24";
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        updateVisibleStatus();
+
+        if (document.visibilityState === "hidden") {
+          hiddenAt = Date.now();
+          log("Trang chuyển sang nền hoặc bị ẩn.");
+          return;
+        }
+
+        if (hiddenAt !== null) {
+          lastAway = Date.now() - hiddenAt;
+          hiddenAt = null;
+
+          const seconds = (lastAway / 1000).toFixed(1);
+
+          $("awayTime").textContent = seconds + " giây";
+
+          log(`Đã quay lại sau ${seconds} giây.`);
+
+          if (lastAway >= MIN_AWAY_TIME) {
+            showToast("👋 Chào mừng bạn quay trở lại!");
+            log("Đã hiển thị thông báo quay lại.");
+          } else {
+            log("Thời gian vắng mặt dưới 3 giây, bỏ qua.");
+          }
+        }
+      });
+
+      $("testBtn").addEventListener("click", () => {
+        showToast("✅ Thông báo hoạt động bình thường!");
+        log("Người dùng bấm nút test thông báo.");
+      });
+
+      $("resetBtn").addEventListener("click", () => {
+        logEntries = [];
+        $("log").textContent = "Đã xóa nhật ký.";
+      });
+
+      updateVisibleStatus();
+      log("Website sẵn sàng theo dõi trạng thái.");
+    })();
+  </script>
+
+</body>
+</html>
